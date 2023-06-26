@@ -22,5 +22,4 @@ I also learned and used some Excel skills, some of which are:
 1. Excel table
 1. Formula
 
-For further reading, the file can be downloaded [here](../assets/excel/Personal dashboard.xlsm).
-
+For further reading, the file can be downloaded <a href="../assets/excel/Personal dashboard.xlsm" download>here</a>.
