@@ -9,7 +9,7 @@ In 2020, I had a side job as a video maker (VM). Our team consisted of 50+ VMs w
 
 I made this personal tracking system and ran it locally to improve my productivity. I only needed to download the team spreadsheet once or twice a week in csv format. This way, I could avoid the lag caused by simultaneous access. Moreover, the csv format removes all formatting I did not use, massively reducing the file size and accelerating the workflow. I then used this csv to update my personal system to track my weekly submissions. I also added a simple dashboard to track my task, payment, and productivity.
 
-![Preview](../assets/gif/preview-dashboard-excel.gif)
+![Preview](../assets/gif/personal-dashboard.gif)
 
 Having a personal system significantly improved my productivity. I could spend more time making videos instead of waiting to access the team system. I also could get a glance at how many tasks I had and how productive I was during the week, an insight that was hard to get before this personal tracking system. As a result, I could improve my video production by up to twice my previous production, especially toward the half end of the project.
 
@@ -22,5 +22,5 @@ I also learned and used some Excel skills, some of which are:
 1. Excel table
 1. Formula
 
-For further reading, the file can be downloaded [here](https://drive.google.com/uc?export=download&id=1LDd-C26HRDpDKADjRZoTiLYbEvcapgvD).
+For further reading, the file can be downloaded [here](../assets/excel/Personal dashboard.xlsm).
 
