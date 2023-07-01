@@ -24,5 +24,6 @@ I also learned and used some Excel skills, some of which are:
 1. Date management
 1. Excel table
 1. Formula
+1. Custom formatting
 
 For further reading, the file can be downloaded <a href="../assets/excel/Personal dashboard.xlsm" download>here</a>.
