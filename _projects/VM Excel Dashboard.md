@@ -1,12 +1,16 @@
 ---
-name: Excel Dashboard
-tools: [Excel]
+name: VM Excel Dashboard
+tools: [Excel, Dashboard]
 image: ../assets/images/excel_dashboard_thumbnail.jpg
 description: This project was initially made to track the progress of one of my side jobs. The dashboard was later added as a quick evaluation of my performance.
 ---
 
 <!-- <h1 align="center">Excel Dashboard</h1> -->
-<h1 align="center"><b>{{ page.title }}</b></h1><br>
+<h1 align="center" style="text-transform: capitalize"><b>{{ page.title }}</b></h1><br>
+
+<p class="text-center">
+{% include elements/button.html link="../assets/excel/Personal dashboard.xlsm" text="Download dashboard file" %}
+</p>
 
 In 2020, I had a side job as a video maker (VM). Our team consisted of 50+ VMs which, in total, could make hundreds of videos per week. Each video went through quality control processes before it could be accepted or rejected and needed to be revised. Therefore, our management team made a tracking system using Google Sheets so that each VMs could access their given tasks and track the progress of their submissions. The system, however, quickly became less efficient since the data exponentially increased as the project progressed. The system was so hard to access at one point that it decreased my productivity.
 
@@ -25,5 +29,3 @@ I also learned and used some Excel skills, some of which are:
 1. Excel table
 1. Formula
 1. Custom formatting
-
-For further reading, the file can be downloaded <a href="../assets/excel/Personal dashboard.xlsm" download>here</a>.
