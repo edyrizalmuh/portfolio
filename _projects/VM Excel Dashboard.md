@@ -6,7 +6,7 @@ description: This project was initially made to track the progress of one of my 
 ---
 
 <!-- <h1 align="center">Excel Dashboard</h1> -->
-<h1 align="center" style="text-transform: capitalize"><b>{{ page.title }}</b></h1><br>
+<h1 align="center"><b>VM Excel Dashboard</b></h1><br>
 
 <p class="text-center">
 {% include elements/button.html link="../assets/excel/Personal dashboard.xlsm" text="Download dashboard file" %}
