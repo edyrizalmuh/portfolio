@@ -1,50 +1,50 @@
 .markdown-body {
-  // h1,
-  // h2 {
-  //   margin-top: 32px;
-  // }
-  counter-reset: section;
-
+  h1,
   h2 {
-    position: relative;
     margin-top: 32px;
-    counter-reset: subsection; /* Reset the subsection counter for each h2 */
-    padding-left: 2rem; /* Add padding to create space between numbering and heading */
-  
-    /* Add numbering using the 'content' property and the 'counter()' function */
-    &::before {
-      counter-increment: section;
-      content: counters(section, ".") ". ";
-      position: absolute;
-      left: 0;
-    }
   }
-  
-  h2 span {
-    /* Move the heading text to the right */
-    position: relative;
-    left: 2.5rem;
-  }
+  // counter-reset: section;
 
-  h3 {
-    position: relative;
-    margin-top: 24px;
-    counter-increment: subsection;
-    padding-left: 3rem; /* Add more padding for h3 to create space between numbering and heading */
+  // h2 {
+  //   position: relative;
+  //   margin-top: 32px;
+  //   counter-reset: subsection; /* Reset the subsection counter for each h2 */
+  //   padding-left: 2rem; /* Add padding to create space between numbering and heading */
   
-    /* Add numbering using the 'content' property and the 'counter()' function */
-    &::before {
-      content: counters(section, ".") "." counters(subsection, ".") " ";
-      position: absolute;
-      left: 0;
-    }
-  }
+  //   /* Add numbering using the 'content' property and the 'counter()' function */
+  //   &::before {
+  //     counter-increment: section;
+  //     content: counters(section, ".") ". ";
+  //     position: absolute;
+  //     left: 0;
+  //   }
+  // }
+  
+  // h2 span {
+  //   /* Move the heading text to the right */
+  //   position: relative;
+  //   left: 2.5rem;
+  // }
 
-  h3 span {
-    /* Move the heading text to the right */
-    position: relative;
-    left: 3.5rem;
-  }
+  // h3 {
+  //   position: relative;
+  //   margin-top: 24px;
+  //   counter-increment: subsection;
+  //   padding-left: 3rem; /* Add more padding for h3 to create space between numbering and heading */
+  
+  //   /* Add numbering using the 'content' property and the 'counter()' function */
+  //   &::before {
+  //     content: counters(section, ".") "." counters(subsection, ".") " ";
+  //     position: absolute;
+  //     left: 0;
+  //   }
+  // }
+
+  // h3 span {
+  //   /* Move the heading text to the right */
+  //   position: relative;
+  //   left: 3.5rem;
+  // }
 
   hr {
     background: $secondary;
