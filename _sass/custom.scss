@@ -1,0 +1,9 @@
+/* Custom style for long code blocks */
+code:not([class*="language-"]) {
+    display: block;
+    overflow-x: auto; /* Enable horizontal scrolling */
+    overflow-y: auto;
+    white-space: pre; /* Use 'pre' instead of 'pre-wrap' */
+    max-height: 300px; /* Set the maximum height as per your preference */
+  }
+  
