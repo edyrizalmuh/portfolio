@@ -6,4 +6,56 @@ code:not([class*="language-"]) {
     white-space: pre; /* Use 'pre' instead of 'pre-wrap' */
     max-height: 300px; /* Set the maximum height as per your preference */
   }
-  
+
+// /* Custom style for floating TOC */
+// .floating-toc {
+//   position: fixed;
+//   top: 45%;
+//   left: 20px;
+//   transform: translateY(-50%);
+//   background-color: #f7f7f7;
+//   border: 1px solid #ccc;
+//   padding: 10px;
+//   max-height: 80vh;
+//   overflow-y: auto;
+//   width: 15%;
+// }
+
+/* Custom style for floating TOC */
+.floating-toc {
+  position: fixed;
+  top: 160px; /* Set the top position to 0 to fix the upper border */
+  left: 20px;
+  transform: translateY(0); /* Remove the translateY property */
+  background-color: transparent; /* Set the background color to white */
+  border: 1px solid #ccc;
+  padding: 10px;
+  max-height: 60vh;
+  overflow-y: auto;
+  width: 15%;
+  color: black; /* Set the font color to black */
+  text-align: left; /* Adjust the alignment to the left */
+  list-style: none; /* Remove bullet points from the main sections */
+  font-size: 14px; /* Set the font size to 14px */
+}
+
+/* Style for floating TOC on mobile devices */
+@media (max-width: 768px) {
+  .floating-toc {
+    width: 100%; /* Set the width to 100% for mobile devices */
+    max-height: 50vh; /* Adjust the max height as needed for mobile view */
+    top: 40px; /* Adjust the top position to give space for mobile view */
+    left: 0;
+    transform: none;
+    z-index: 1; /* Ensure the TOC stays above other content */
+  }
+}
+
+.floating-toc li {
+  list-style: none; /* Remove bullet points from subsections */
+}
+
+.floating-toc li li {
+  padding-left: 0px; /* Adjust the indentation for subsections */
+}
+

@@ -106,3 +106,9 @@ exclude:
   - CONTRIBUTING.md
   - LICENSE
   - "*.log"
+
+# kramdown:
+#   input: GFM
+#   toc_levels: "1,2,3,4,5,6"
+#   auto_ids: true
+#   footnote_nr: 1
