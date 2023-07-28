@@ -1,12 +1,11 @@
 /* Custom style for long code blocks */
 code:not([class*="language-"]) {
-    display: block;
-    overflow-x: auto; /* Enable horizontal scrolling */
-    overflow-y: auto;
-    white-space: pre; /* Use 'pre' instead of 'pre-wrap' */
-    max-height: 300px; /* Set the maximum height as per your preference */
-  }
-  
+  display: block;
+  overflow: auto; /* Enable both horizontal and vertical scrolling */
+  white-space: pre; /* Use 'pre' instead of 'pre-wrap' */
+  max-height: 300px; /* Set the maximum height as per your preference */
+}
+
 /* Custom style for floating TOC */
 .floating-toc {
   position: fixed;
@@ -26,14 +25,26 @@ code:not([class*="language-"]) {
   --text-color: black; /* Default text color for light mode */
   color: var(--text-color); /* Use the custom property for text color */
 
+  /* Add the dark mode styles using [data-theme="dark"] selector */
+  [data-theme="dark"] & {
+    --text-color: white; /* Text color for dark mode */
+    color: var(--text-color); /* Use the custom property for text color */
+
+    a {
+      color: white; /* Set font color for TOC links in dark mode */
+    }
+  }
+
   li {
     list-style: none;
+
     a {
       text-decoration: none;
       color: black; /* Set font color for TOC links */
     }
+
     li {
-      padding-left: 0px; /* Adjust the indentation for subsections */
+      padding-left: 0; /* Adjust the indentation for subsections */
     }
   }
 
