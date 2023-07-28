@@ -6,43 +6,49 @@ code:not([class*="language-"]) {
     white-space: pre; /* Use 'pre' instead of 'pre-wrap' */
     max-height: 300px; /* Set the maximum height as per your preference */
   }
-
+  
 /* Custom style for floating TOC */
 .floating-toc {
   position: fixed;
-  top: 160px; /* Set the top position to 0 to fix the upper border */
-  left: 20px;
-  transform: translateY(0); /* Remove the translateY property */
-  background-color: transparent; /* Set the background color to white */
+  top: 160px;
+  left: 10px;
+  transform: translateY(0);
+  background-color: transparent;
   border: 1px solid #ccc;
   padding: 10px;
   max-height: 60vh;
   overflow-y: auto;
   width: 15%;
-  color: black; /* Set the font color to black */
-  text-align: left; /* Adjust the alignment to the left */
-  list-style: none; /* Remove bullet points from the main sections */
-  font-size: 14px; /* Set the font size to 14px */
-  
+  font-size: 14px;
+  text-align: left;
+  list-style: none;
+
+  --text-color: black; /* Default text color for light mode */
+  color: var(--text-color); /* Use the custom property for text color */
+
+  li {
+    list-style: none;
+    a {
+      text-decoration: none;
+      color: black; /* Set font color for TOC links */
+    }
+    li {
+      padding-left: 0px; /* Adjust the indentation for subsections */
+    }
+  }
+
   /* Add a media query to adjust the position when the window size is reduced */
   @media screen and (max-width: 768px) {
-    position: relative; /* Change to relative position to keep TOC in document flow */
-    top: auto; /* Remove the top positioning */
-    left: 0; /* Remove the left positioning */
-    width: 100%; /* Set width to fill the entire container */
-    max-height: none; /* Remove the maximum height limit */
+    position: relative;
+    top: auto;
+    left: 0;
+    width: 100%;
+    max-height: none;
   }
-}
 
-.floating-toc li  {
-  list-style: none; /* Remove bullet points from subsections */
-}
-
-.floating-toc li a {
-  text-decoration: none; /* Remove underline from TOC links */
-  color: black; /* Set font color for TOC links */
-}
-
-.floating-toc li li {
-  padding-left: 0px; /* Adjust the indentation for subsections */
+  /* Add this to your custom CSS */
+  a.active {
+    font-weight: bold; /* Make the active link bold */
+    color: #007bff; /* Set the color of the active link as you desire */
+  }
 }
