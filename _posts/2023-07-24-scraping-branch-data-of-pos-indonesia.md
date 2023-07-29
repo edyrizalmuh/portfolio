@@ -2,8 +2,8 @@
 title: Scraping branch data of POS Indonesia
 tags: [Data Scraping, R, Rvest]
 style: fill
-color: warning
-description: Using Rvest to scrape branch data from POS Indonesia's official website.
+color: danger
+description: Using Rselenium and Rvest to scrape branch data from POS Indonesia's official website.
 # external_url: https://github.com/edyrizalmuh/scraping-courier-data/tree/main
 ---
 
@@ -33,7 +33,7 @@ The branches in [the official website](https://www.posindonesia.co.id/) are sear
 
 {% include elements/figure.html image="assets/images/wikipedia - cities and regencies in Indonesia.png" caption="Example of the wikipedia page. Each province has its own table, listing its cities and regencies." %}
 
-### 3.1 Scraping Names of Cities and Regencies
+### 3.1 Data Scraping
 Since each province has its own table, the first step is to extract all of these tables using `rvest`.
 
 ```R
@@ -61,7 +61,7 @@ prov_names = head(table_prov$provinsi, nrow(table_prov)-1)
 table_city = table_all[-1]
 ```
 
-### 3.2 Cleaning City and Regency Data
+### 3.2 Data Cleaning
 
 The tables of each province seem to have different dimensions. 
 
@@ -481,3 +481,422 @@ table_city_tidy
 ```
 
 ## 4. Scraping the Branches' Names and Addresses
+After obtaining the names of cities and regencies in Indonesia, the next step is to scrape the branches from POS's official website. The data that will be scrape are the names and the addresses. These data can be used in later project, for example, in comparison to google maps data to access the availability of these branches. 
+
+### 4.1 Data Scraping
+Since the scraping process require additional action such as inputing city's or region's name, the scraping process will be performed using combination of`Rselenium` and `rvest` packages.
+
+```R
+library(Rselenium)
+library(tidyverse)
+library(netstat)
+library(wdman)
+library(httr)
+library(rvest)
+library(janitor)
+
+daftar_kota = table_city_tidy %>% pull(kabupaten_kota)
+url_pos = "https://www.posindonesia.co.id/"
+```
+
+The following syntax will initiate the server.
+```R
+rs_obj = 
+  rsDriver(
+    browser = "chrome", 
+    chromever = "114.0.5735.90",
+    port = free_port()
+  )
+remDr = rs_obj$client
+remDr$open()
+```
+
+A blank browser will open.
+{% include elements/figure.html image="assets/images/selenium blank server.png" caption="Rselenium server"%}
+
+Create a tibble that will be to store the scraped data.
+```R
+table_cabang =
+  tibble(
+    nama_cabang = character(0),
+    jalan = character(0),
+    kecamatan = character(0),
+    kabkota = character(0),
+    kode_pos = character(0)
+  )
+kabkota_error = c()
+kabkota_success = c()
+```
+
+The scraping process starts with this code.
+```R
+kabkota_remaining = daftar_kota[!daftar_kota %in% kabkota_success]
+pb = progress_estimated(length(kabkota_remaining))
+for (kabkota in kabkota_remaining){
+  random_wait_time = sample(1:5, 1) # so that the requests are not too aggressive
+  
+  remDr$navigate(url_pos)
+  # remDr$setTimeout("page load", 5000)
+  # close pop up window at first visit
+  if (kabkota == kabkota_remaining[1]){
+    close_popup = remDr$findElement("xpath", '//*[contains(concat( " ", @class, " " ), concat( " ", "img-fluid", " " ))]')
+    close_popup$clickElement()
+  }
+  
+  # input city or regency name to search box
+  city_input = remDr$findElement("xpath", "//*[(@id = 'city')]")
+  city_input$clickElement()
+  city_input$sendKeysToElement(list(kabkota, key = "enter"))
+  nama_cabang = remDr$findElements("xpath", "//b")
+  
+  # is there a table?
+  table = tryCatch({
+    suppressMessages(remDr$findElement("id", "direction_content"))
+  }, error = function(e){
+    return(NULL)
+  })
+  
+  if (!is.null(table)){ # scrape if there is a table
+    table_html = table$getPageSource()
+    page = read_html(table_html %>% unlist())
+    df = 
+      html_table(page, trim = TRUE) %>% 
+      .[[1]] %>% 
+      clean_names() %>% 
+      select(kantor_pos) %>%
+      mutate(kantor_pos = gsub("[\r\n][[:space:]]+", ";", kantor_pos))
+    df_tidy = 
+      str_split_fixed(df$kantor_pos, ";", 5) %>%
+      as_tibble() %>%
+      rename(
+        nama_cabang = V1,
+        jalan = V2,
+        kecamatan = V3,
+        kabkota = V4,
+        kode_pos = V5
+      )
+    kabkota_success = append(kabkota_success, kabkota)
+  } else { # if there is no table, return NA and the city/regency name
+    df_tidy = 
+      tibble(
+        nama_cabang = NA, 
+        jalan = NA, 
+        kecamatan = NA, 
+        kabkota = kabkota, 
+        kode_pos = NA
+      )
+    kabkota_error = append(kabkota_error, kabkota)
+  }
+  
+  table_cabang = bind_rows(table_cabang, df_tidy)
+  pb$tick()$print()
+  # remDr$setTimeout("implicit", random_wait_time) # wait until loading is completed
+  Sys.sleep(random_wait_time)
+}
+```
+
+Wait until the scraping process ends.
+![Scraping process on POS's website](../assets/gif/scraping pos website.gif)
+
+Since all the data come from the same website, the branch names and addresses are similar in format. Therefore, the cleaning process can be mostly done in the above syntax.After the scraping process is done, we will get `table_cabang`, containing all POS's branches data in Indonesia.
+```R
+print(table_cabang, n=20)
+```
+```
+# A tibble: 22,178 × 5
+   nama_cabang         jalan                                    kecamatan       kabkota               kode_pos
+   <chr>               <chr>                                    <chr>           <chr>                 <chr>   
+ 1 Suaktimah           Suak Timah,                              Sama Tiga,      Aceh Barat,           -       
+ 2 Teunom              Teunom,                                  Teunom,         Aceh Barat,           -       
+ 3 Calang              Calang,                                  Krueng Sabee,   Aceh Barat,           -       
+ 4 Lhokruet            Lhokruet,                                Sampoiniet,     Aceh Barat,           -       
+ 5 Keudearon           Jl. Meulaboh - Tutut,                    Kaway XVI,      Aceh Barat,           -       
+ 6 Simpang Alpen       Jl. Meulaboh - Tapak Tuan,               Kec. Meurebo,   Kab. Aceh Barat,      23687   
+ 7 Manggeng            Pasar Manggeng,                          Manggeng,       Aceh Barat Daya,      -       
+ 8 Blangpidie          Jl. Irian No. 1 Blangpidie,              Blangpidie,     Aceh Barat Daya,      -       
+ 9 Kotabahagia         Pasar Kotabahagia,                       Kotabahagia,    Aceh Barat Daya,      -       
+10 MEULABOH            Jl. Teuku Cik Di Tiro No.2,              Johan Pahlawan, Aceh Barat,           23681   
+11 Teuku Umar          Jl. Swadaya No. 71,                      Johan Pahlawan, Kab. Aceh Barat,      23615   
+12 Rundeng             Jl. Makam Pahlawan LK III Rt 001 Rw 001, Johan Pahlawan, Meulaboh, Aceh Barat, 23616   
+13 TANGAN-TANGAN       -,                                       TANGAN-TANGAN,  ACEH BARAT DAYA,      23768   
+14 BABAHROT            -,                                       BABAHROT,       ACEH BARAT DAYA,      23767   
+15 Manggeng            Pasar Manggeng,                          Manggeng,       Aceh Barat Daya,      -       
+16 Blangpidie          Jl. Irian No. 1 Blangpidie,              Blangpidie,     Aceh Barat Daya,      -       
+17 Kotabahagia         Pasar Kotabahagia,                       Kotabahagia,    Aceh Barat Daya,      -       
+18 TANGAN-TANGAN       -,                                       TANGAN-TANGAN,  ACEH BARAT DAYA,      23768   
+19 BABAHROT            -,                                       BABAHROT,       ACEH BARAT DAYA,      23767   
+20 Bandaacehdarussalam Kampus UNSYIAH KUALA,                    Darussalam,     Aceh Besar,           23111   
+# ℹ 22,158 more rows
+# ℹ Use `print(n = ...)` to see more rows
+```
+
+### 4.2 Data Cleaning
+As seen in the first 20 rows of the scraped data, there are still some unclean data:
+1. in `kabkota` column, there are still some observation that still have `Kab.` included in the value. 
+1. There are some `-` values in `kode_pos`, but more importantly, there are also some `-` in `jalan`, which is crucial as the `jalan` column should have the most detail location of the branches. A quick search on google maps shows that there is no POS branch in these `kecamatan` (sub-district).
+
+<br>
+**All-caps values**
+
+Based on the above table, there seems to be some rows with all-caps values. To avoid duplication, all of the values should be changed to lower case.
+```R
+table_cabang = table_cabang %>% mutate(across(where(is.character), tolower))
+table_cabang
+```
+```
+# A tibble: 22,178 × 5
+   nama_cabang         jalan                                    kecamatan       kabkota               kode_pos
+   <chr>               <chr>                                    <chr>           <chr>                 <chr>   
+ 1 suaktimah           suak timah,                              sama tiga,      aceh barat,           -       
+ 2 teunom              teunom,                                  teunom,         aceh barat,           -       
+ 3 calang              calang,                                  krueng sabee,   aceh barat,           -       
+ 4 lhokruet            lhokruet,                                sampoiniet,     aceh barat,           -       
+ 5 keudearon           jl. meulaboh - tutut,                    kaway xvi,      aceh barat,           -       
+ 6 simpang alpen       jl. meulaboh - tapak tuan,               kec. meurebo,   kab. aceh barat,      23687   
+ 7 manggeng            pasar manggeng,                          manggeng,       aceh barat daya,      -       
+ 8 blangpidie          jl. irian no. 1 blangpidie,              blangpidie,     aceh barat daya,      -       
+ 9 kotabahagia         pasar kotabahagia,                       kotabahagia,    aceh barat daya,      -       
+10 meulaboh            jl. teuku cik di tiro no.2,              johan pahlawan, aceh barat,           23681   
+11 teuku umar          jl. swadaya no. 71,                      johan pahlawan, kab. aceh barat,      23615   
+12 rundeng             jl. makam pahlawan lk iii rt 001 rw 001, johan pahlawan, meulaboh, aceh barat, 23616   
+13 tangan-tangan       -,                                       tangan-tangan,  aceh barat daya,      23768   
+14 babahrot            -,                                       babahrot,       aceh barat daya,      23767   
+15 manggeng            pasar manggeng,                          manggeng,       aceh barat daya,      -       
+16 blangpidie          jl. irian no. 1 blangpidie,              blangpidie,     aceh barat daya,      -       
+17 kotabahagia         pasar kotabahagia,                       kotabahagia,    aceh barat daya,      -       
+18 tangan-tangan       -,                                       tangan-tangan,  aceh barat daya,      23768   
+19 babahrot            -,                                       babahrot,       aceh barat daya,      23767   
+20 bandaacehdarussalam kampus unsyiah kuala,                    darussalam,     aceh besar,           23111   
+# ℹ 22,158 more rows
+# ℹ Use `print(n = ...)` to see more rows
+```
+
+<br>
+**Cities and Regencies without any Branches**
+
+It is important to remember that any search during scraping process that did not return any result, either because of server error or because of no branch in the region, would be marked as `NA`. There are 80 such cities and regencies.
+```R
+kabkota_with_no_branch = table_cabang %>% filter_all(any_vars(is.na(.)))
+kabkota_with_no_branch
+```
+```
+# A tibble: 80 × 5
+   nama_cabang jalan kecamatan kabkota                          kode_pos
+   <chr>       <chr> <chr>     <chr>                            <chr>   
+ 1 NA          NA    NA        aceh jaya                        NA      
+ 2 NA          NA    NA        sabang                           NA      
+ 3 NA          NA    NA        labuhanbatu selatan              NA      
+ 4 NA          NA    NA        labuhanbatu utara                NA      
+ 5 NA          NA    NA        nias barat                       NA      
+ 6 NA          NA    NA        nias utara                       NA      
+ 7 NA          NA    NA        padang sidempuan                 NA      
+ 8 NA          NA    NA        tebing tinggi                    NA      
+ 9 NA          NA    NA        kepulauan meranti                NA      
+10 NA          NA    NA        sungai penuh                     NA      
+11 NA          NA    NA        musi rawas utara                 NA      
+12 NA          NA    NA        ogan komering ulu selatan        NA      
+13 NA          NA    NA        penukal abab lematang ilir       NA      
+14 NA          NA    NA        bengkulu tengah                  NA      
+15 NA          NA    NA        kepulauan anambas                NA      
+16 NA          NA    NA        lembata                          NA      
+17 NA          NA    NA        malaka                           NA      
+18 NA          NA    NA        nagekeo                          NA      
+19 NA          NA    NA        sabu raijua                      NA      
+20 NA          NA    NA        sumba tengah                     NA      
+21 NA          NA    NA        pulang pisau                     NA      
+22 NA          NA    NA        palangka raya                    NA      
+23 NA          NA    NA        tana tidung                      NA      
+24 NA          NA    NA        bolaang mongondow utara          NA      
+25 NA          NA    NA        kepulauan sangihe                NA      
+26 NA          NA    NA        kepulauan siau tagulandang biaro NA      
+27 NA          NA    NA        kepulauan talaud                 NA      
+28 NA          NA    NA        banggai laut                     NA      
+29 NA          NA    NA        morowali utara                   NA      
+30 NA          NA    NA        tojo una-una                     NA      
+31 NA          NA    NA        kepulauan selayar                NA      
+32 NA          NA    NA        pangkajene dan kepulauan         NA      
+33 NA          NA    NA        toraja utara                     NA      
+34 NA          NA    NA        buton selatan                    NA      
+35 NA          NA    NA        buton tengah                     NA      
+36 NA          NA    NA        buton utara                      NA      
+37 NA          NA    NA        kolaka timur                     NA      
+38 NA          NA    NA        konawe kepulauan                 NA      
+39 NA          NA    NA        muna barat                       NA      
+40 NA          NA    NA        baubau                           NA      
+41 NA          NA    NA        bone bolango                     NA      
+42 NA          NA    NA        gorontalo utara                  NA      
+43 NA          NA    NA        mamuju tengah                    NA      
+44 NA          NA    NA        pasangkayu                       NA      
+45 NA          NA    NA        kepulauan aru                    NA      
+46 NA          NA    NA        kepulauan tanimbar               NA      
+47 NA          NA    NA        maluku barat daya                NA      
+48 NA          NA    NA        tual                             NA      
+49 NA          NA    NA        halmahera timur                  NA      
+50 NA          NA    NA        kepulauan sula                   NA      
+51 NA          NA    NA        pulau morotai                    NA      
+52 NA          NA    NA        pulau taliabu                    NA      
+53 NA          NA    NA        kepulauan yapen                  NA      
+54 NA          NA    NA        mamberamo raya                   NA      
+55 NA          NA    NA        sarmi                            NA      
+56 NA          NA    NA        waropen                          NA      
+57 NA          NA    NA        kaimana                          NA      
+58 NA          NA    NA        manokwari selatan                NA      
+59 NA          NA    NA        pegunungan arfak                 NA      
+60 NA          NA    NA        teluk wondama                    NA      
+61 NA          NA    NA        asmat                            NA      
+62 NA          NA    NA        boven digoel                     NA      
+63 NA          NA    NA        deiyai                           NA      
+64 NA          NA    NA        dogiyai                          NA      
+65 NA          NA    NA        intan jaya                       NA      
+66 NA          NA    NA        paniai                           NA      
+67 NA          NA    NA        puncak jaya                      NA      
+68 NA          NA    NA        jayawijaya                       NA      
+69 NA          NA    NA        lanny jaya                       NA      
+70 NA          NA    NA        mamberamo tengah                 NA      
+71 NA          NA    NA        nduga                            NA      
+72 NA          NA    NA        tolikara                         NA      
+73 NA          NA    NA        yalimo                           NA      
+74 NA          NA    NA        yahukimo                         NA      
+75 NA          NA    NA        maybrat                          NA      
+76 NA          NA    NA        raja ampat                       NA      
+77 NA          NA    NA        sorong selatan                   NA      
+78 NA          NA    NA        tambrauw                         NA      
+79 NA          NA    NA        kepulauan seribu                 NA      
+80 NA          NA    NA        jakarta utara                    NA 
+```
+
+These rows will not be removed, but will be kept as reference, which can be used as comparison when scraping data via other sources, such as google maps.
+
+<br>
+**Duplicated Branches**
+
+It is possible for a branch to show up multiple times during scraping process because of similar cities or regencies names. For example, branches in `Aceh Barat` may show up during scraping on `Aceh Barat Daya`. The following tabel shows that there are indeed duplicated rows.
+```R
+table_cabang %>% count(nama_cabang, jalan, kecamatan, kabkota, sort = TRUE)
+```
+```
+# A tibble: 16,646 × 5
+   nama_cabang        jalan                                              kecamatan             kabkota                n
+   <chr>              <chr>                                              <chr>                 <chr>              <int>
+ 1 berkah             permata kopo jl. ruby e2-91,                       margahayu,            bandung,               6
+ 2 cahaya buana mulia jl kedasih i no 115 blok a1 cikarang baru rt 17/8, cikarang timur,       bekasi,                6
+ 3 kampungdalam       desa campago,                                      v koto kampung dalam, padang pariaman,       6
+ 4 kospin sejahtera   jl rambutan 10 no 7 rt 05 rw 07,                   tegal barat,          tegal,                 6
+ 5 lubukalung         desa pasar lubukalung,                             lubuk alung,          padang pariaman,       6
+ 6 ma ngamprah        jalan gadobangkong no.18 rt 012 rw 09,             ngamprah,             bandung barat,         6
+ 7 ma padalarang      jalan raya padalarang no.508 rt 02 rw 14,          padalarang,           bandung barat,         6
+ 8 merpati            perumahan citra margu permai no.1 a rt.002/011,    pondok aren,          tangerang selatan,     6
+ 9 sicincin           desa bari,                                         2x11 enam lingkung,   padang pariaman,       6
+10 simprug ckb pos    jl simprug raya blok b2 no 8,                      cikarang timur,       bekasi,                6
+# ℹ 16,636 more rows
+# ℹ Use `print(n = ...)` to see more rows
+```
+
+The duplicated branches can be removed using `distinct()` function from `dplyr` package.
+```R
+table_no_dupl = distinct(table_cabang)
+cat(nrow(table_cabang), nrow(table_no_dupl))
+```
+```
+22178 16698
+```
+
+There was 22,178 rows before the removal. Now, there are only 16,698 rows.
+
+<br>
+**"Kab." in kabkota**
+
+Among the 16,798 rows, there are some rows that still have "kab." (stands for kabupaten/regency) in `kabkota`.
+```R
+table_no_dupl %>% filter(str_detect(kabkota, "kab."))
+```
+```
+# A tibble: 1,397 × 5
+   nama_cabang            jalan                                           kecamatan       kabkota           kode_pos
+   <chr>                  <chr>                                           <chr>           <chr>             <chr>   
+ 1 simpang alpen          jl. meulaboh - tapak tuan,                      kec. meurebo,   kab. aceh barat,  23687   
+ 2 teuku umar             jl. swadaya no. 71,                             johan pahlawan, kab. aceh barat,  23615   
+ 3 ud ikhsan sovenir aceh jl. medan-banda aceh,                           muara batu,     kab. aceh utara,  24355   
+ 4 najwa pos              jl. cot girek km 9,                             lhoksukon,      kab. aceh utara,  24382   
+ 5 cv dilla vista         jl. medan - banda aceh no. 1 sp cureh,,         kota juang,     kab. bireuen,,    24219   
+ 6 cureh                  jl. medan-banda aceh,                           kota juang,     kab. bireuen,     24219   
+ 7 merpati                jl. lueng teungoh no. 38,                       bandar dua,,    kab. pidie jaya,, 24188   
+ 8 bumdes pelita jaya     dusun iv,                                       buntu pane,     kab. asahan,      21261   
+ 9 rif agency             jl. the silau no. 21,                           air joman,      kab. asahan,      21263   
+10 alfa jaya mandiri      jl. lintas sumatera km200 dusun iv pulau maria, teluk dalam,    kab. asahan,      21277   
+# ℹ 1,387 more rows
+# ℹ Use `print(n = ...)` to see more rows
+```
+
+Removing `kab.` will make it more compatible with scraped data from [section 3](#3-cities-and-regencies).
+```R
+table_cabang_tidy = 
+  table_no_dupl %>%
+  mutate(kabkota = str_remove(kabkota, "kab. "))
+table_cabang_tidy %>% filter(str_detect(kabkota, "kab. "))
+```
+```
+# A tibble: 0 × 5
+# ℹ 5 variables: nama_cabang <chr>, jalan <chr>,
+#   kecamatan <chr>, kabkota <chr>, kode_pos <chr>
+```
+
+<br>
+**Data with no address**
+
+There are also some rows with `-,` as values. The values can be found in columns `jalan`, `kecamatan`, and `kode_pos`. However, the most important rows are those with `-,` in `jalan`, since a branch will still be searchable even if `-,` `kecamatan` and `kode_pos` are missing as long as  the `kabkota` is not missing.
+
+There are 98 rows with no value in `jalan`.
+```R
+table_cabang_tidy %>% filter(jalan == "-,")
+```
+```
+# A tibble: 98 × 5
+   nama_cabang   jalan kecamatan             kabkota          kode_pos
+   <chr>         <chr> <chr>                 <chr>            <chr>   
+ 1 tangan-tangan -,    tangan-tangan,        aceh barat daya, 23768   
+ 2 babahrot      -,    babahrot,             aceh barat daya, 23767   
+ 3 simpang kanan -,    simpang kanan,        aceh singkil,    23794   
+ 4 non<x>stop    -,    karang baru,          aceh tamiang,    24476   
+ 5 rundeng       -,    rundeng,              subulussalam,    23779   
+ 6 le poldasu    -,    medan tanjung merawa, deli serdang,    20147   
+ 7 le manunggal  -,    labuhan deli,         deli serdang,    20373   
+ 8 sipispis      -,    sipispis,             serdang bedagai, -       
+ 9 le fifsibolga -,    sarudik,              tapanuli tengah, 22616   
+10 mps medan 1   -,    medan tembung,        medan kota,      20221   
+# ℹ 88 more rows
+# ℹ Use `print(n = ...)` to see more rows
+```
+
+These branches are not found in google maps, probably indicating that these branch do not exist, or are not operating anymore. Therefore, these rows will be removed.
+
+```R
+table_cabang_tidy =
+  table_cabang_tidy %>%
+  filter(!(jalan == "-,"))
+table_cabang_tidy
+```
+```
+# A tibble: 16,520 × 5
+   nama_cabang   jalan                       kecamatan       kabkota          kode_pos
+   <chr>         <chr>                       <chr>           <chr>            <chr>   
+ 1 suaktimah     suak timah,                 sama tiga,      aceh barat,      -       
+ 2 teunom        teunom,                     teunom,         aceh barat,      -       
+ 3 calang        calang,                     krueng sabee,   aceh barat,      -       
+ 4 lhokruet      lhokruet,                   sampoiniet,     aceh barat,      -       
+ 5 keudearon     jl. meulaboh - tutut,       kaway xvi,      aceh barat,      -       
+ 6 simpang alpen jl. meulaboh - tapak tuan,  kec. meurebo,   aceh barat,      23687   
+ 7 manggeng      pasar manggeng,             manggeng,       aceh barat daya, -       
+ 8 blangpidie    jl. irian no. 1 blangpidie, blangpidie,     aceh barat daya, -       
+ 9 kotabahagia   pasar kotabahagia,          kotabahagia,    aceh barat daya, -       
+10 meulaboh      jl. teuku cik di tiro no.2, johan pahlawan, aceh barat,      23681   
+# ℹ 16,510 more rows
+# ℹ Use `print(n = ...)` to see more rows
+```
+
+There are only 16,520 rows, 80 less rows even when added to the 98 rows with `-,`, because the function `filter()` also filter out the 80 rows with no branches.
+
+# 5. Conclusion
+Based on the scraped data, there are a total of 16,520 branches of POS Indonesia. This number is way more than the official number that is said to have 4000+ branches. This number, however, is way less than the supposed number if `Agen POS` is included, which is said to have 28,000 agents. If the scraped data does include only part of all POS agents, it will be a waste of potential. After all, the large number of agents will not be an advantage if the customers have no access to the agents.
+
+Furthermore, the scraping process failed to find branches in at least 80 cities/regencies. While the failure is caused by server error in some regions, there are also some regions that truly returned no result. However, it is important to note that it is possible that the website uses different keywords in some regions, since a metropolitan area like `Jakarta Utara` is one of the 80 cities/regencies without branch. A cross check with data from other sources, such as google maps, may provide complete the information.
