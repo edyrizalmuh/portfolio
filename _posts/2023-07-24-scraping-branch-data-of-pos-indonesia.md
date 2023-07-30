@@ -1,10 +1,9 @@
 ---
 title: Scraping branch data of POS Indonesia
-tags: [Data Scraping, R, Rvest]
-style: fill
-color: danger
+tags: [Data Scraping, Data Cleaning, R, Rvest, Rselenium]
+style: border
+color: success
 description: Using Rselenium and Rvest to scrape branch data from POS Indonesia's official website.
-# external_url: https://github.com/edyrizalmuh/scraping-courier-data/tree/main
 ---
 
 {% include elements/figure.html image="assets/images/Pos_indo.png" %}
@@ -29,12 +28,13 @@ These lines confirm that all robots have unrestricted access to visit all pages 
 
 
 ## 3. Cities and Regencies
-The branches in [the official website](https://www.posindonesia.co.id/) are searchable only by city or regency. Therefore, it is important to scrape all names of cities and regencies in Indonesia before scraping the branches, which can be obtained from [this wikipedia page](https://id.wikipedia.org/wiki/Daftar_kabupaten_dan_kota_di_Indonesia). Of course, the robots.txt permit scraping from such URL.
+The branches on [the official website](https://www.posindonesia.co.id/) are searchable only by city or regency. Therefore, it is important to scrape all names of cities and regencies in Indonesia before scraping the branches, which can be obtained from [this Wikipedia page](https://id.wikipedia.org/wiki/Daftar_kabupaten_dan_kota_di_Indonesia). Of course, the robots.txt permit scraping from such URL.
 
 {% include elements/figure.html image="assets/images/wikipedia - cities and regencies in Indonesia.png" caption="Example of the wikipedia page. Each province has its own table, listing its cities and regencies." %}
 
 ### 3.1 Data Scraping
-Since each province has its own table, the first step is to extract all of these tables using `rvest`.
+
+Initially, the process involves utilizing `rvest` to extract all individual tables, each corresponding to a specific province.
 
 ```R
 # install.packages("rvest")
@@ -53,7 +53,7 @@ The syntax above returns `table_all`, which is a list with 39 elements.
 
 {% include elements/figure.html image="assets/images/table_all.png" caption="The first 8 elements of table_all"%}
 
-The first element of `table_all` is a table containing the names of all provinces in Indonesia. The remaining 38 elements are tables for each province, containing the names of its cities and regencies. Therefore, the first element should be separated from the rest 38 elements.
+The first element of `table_all` is a table containing the names of all provinces in Indonesia. The remaining 38 elements are tables for each province, containing the names of its cities and regencies. Therefore, the first element should be separated from the other 38 elements.
 
 ```R
 table_prov = table_all[[1]] %>% clean_names() # clean column names to avoid error
@@ -75,7 +75,7 @@ num_of_col
 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 12 10
 ```
 
-The output shows that most tables have 10 columns, but some tables have more than 10 columns. The cities/regencies with more than 10 columns are the cities/regencies with these indexes:
+The output shows that most tables have ten columns, but some have more than ten. The cities/regencies with more than ten columns are the cities/regencies with these indexes:
 ```R
 idx_messy = which(num_of_col > 10)
 idx_messy
@@ -85,9 +85,9 @@ idx_messy
 2  8 11 37
 ```
 
-These indexes are based on `table_city`, corresponding to indexes `2, 9, 12` and `38` in `table_all`. Knowing indexes from these two objects is important for cleaning later, as we do not want to accidentally change the content of these tables.
+These indexes are based on `table_city`, corresponding to indexes `2, 9, 12,` and `38` in `table_all`. Knowing indexes from these two objects is important for cleaning later, as we do not want to change the content of these tables accidentally.
 
-These column names have to be compared and standardized. The following syntax shows the unique column names and how many province(s) use the names in its table. 
+These column names have to be compared and standardized. The following syntax shows the unique column names and how many province(s) use them in its table. 
 
 ```R
 # Extract unique column names from all tables
@@ -220,15 +220,15 @@ result_tibble %>%
 95 "luas wilayah (km2)[10]"              1
 ```
 
-Based on the output, there are some common column names such as `No.` and `Peta lokasi`, but even these columns only sums up to 37 tables; there are 38 provinces. It means that there is at least one province table with different or simply missing these columns, especially considering that there are three province tables with blank column(s).
+Based on the output, there are some common column names such as `No.` and `Peta lokasi`, but even these columns only sums up to 37 tables; there are 38 provinces. It means at least one province table with different or simply missing these columns, especially considering that there are three provinces with blank column(s).
 
-There are also columns with different names, but essentially means the same thing. `Bupati`, `Bupati/Walikota`, `Bupati/wali kota`, and `Bupati/wali kota administrasi` means the head of the government. `Distrik/Kapanewon/kemantren` has the same administrative level as `Kecamatan`, while `Gampong/kalurahan` has the same administrative level as `Kelurahan/desa/kampung`. 
+There are also columns with different names, which essentially means the same thing. `Bupati`, `Bupati/Walikota`, `Bupati/wali kota`, and `Bupati/wali kota administrasi` means the head of the government. `Distrik/Kapanewon/kemantren` has the same administrative level as `Kecamatan`, while `Gampong/kalurahan` has the same administrative level as `Kelurahan/desa/kampung`. 
 
-Some column names, such as `Ibu Kota`, `Jumlah Penduduk`, and `Luas Wilayah`, have various values because of numbers in square brackets, which are reference numbering in the original website page. It means that the numbers in one city/regency may be ontained from different sources compared to the numbers from another city/regency. This is obviously less than ideal. Another important thing to consider is how these columns, specifically `Jumlah Penduduk` were obtained from different years. Both problems may be solved by obtaining the most recent data from a single organization such as Badan Pusat Statistik (lit. Centra Agency of Statistics). But, this cleaning process will be postponed until such data are needed for the coming larger project, since the data needed for now is the city and regency names. For now, columns `Jumlah Penduduk` and `Luas Wilayah` will be marked with `_diff_sources_and_years` names.
+Some column names, such as `Ibu Kota`, `Jumlah Penduduk`, and `Luas Wilayah`, have various values because of reference numbers in square brackets. It means that the numbers in one city/regency may be obtained from different sources compared to the numbers from another city/regency. This condition is less than ideal. Another important thing to consider is how these columns, specifically `Jumlah Penduduk` were obtained from different years. Both problems may be solved by obtaining the most recent data from a single organization such as Badan Pusat Statistik (lit. Centra Agency of Statistics). But, this cleaning process will be postponed until such data are needed for the coming larger project since the data needed for now is the city and regency names. For now, columns `Jumlah Penduduk` and `Luas Wilayah` will be marked with `_diff_sources_and_years` names.
 
-Other than columns with missing or similar names, there are also some column names that are unique to certain table. Column names such as `Ref.` (Reference), `IPM`, and `Lambang alt` are only found in a table. These column will not be used (including the `Lambang` column which presents in more tables). 
+Other than columns with missing or similar names, some column names are unique to certain tables. Column names such as `Ref.` (Reference), `IPM`, and `Lambang alt` are only found in a certain table. These columns will not be used (including the `Lambang` column, which is present in more tables). 
 
-There are also undefined column names that start with `X`. This is found in city number 5.
+There are also undefined column names that start with `X`. These columns are found in city number 5.
 ```R
 table_city[[5]]
 ```
@@ -257,7 +257,7 @@ As seen in the table, the header of the table becomes the first row. This can be
 table_city[[5]] = table_all[[6]][-1,]
 ```
 
-As for the tables with more columns, i.e. the tables with these indexes:
+As for the tables with more columns, i.e., the tables with these indexes:
 ```R
 idx_messy
 ```
@@ -283,7 +283,7 @@ table_city[[2]]
 # ℹ Use `print(n = ...)` to see more rows
 ```
 
-`IPM` is the only column that does not present in other tables. This table can be easily cleaned by dropping this `IPM` column. Meanwhile, the 8-th table have 20 columns:
+`IPM` is the only column not in the other tables. This table can be easily cleaned by dropping this `IPM` column. Meanwhile, the 8th table has 20 columns:
 
 ```R
 table_city[[8]]
@@ -300,7 +300,7 @@ table_city[[8]]
  # ℹ 10 more rows
 ```
 
-The only row in the 11-th to the 20-th columns is supposed to be the first row in the first 10 columns. The syntax below will fix this issue.
+The only row in the 11th to the 20th columns is supposed to be the first row in the first ten columns. The syntax below will fix this issue.
 ```R
 temp1 = table_all[[9]][1,11:20]
 temp2 = table_all[[9]][-1,1:10]
@@ -327,7 +327,7 @@ table_city[[11]]
 # ℹ abbreviated names: ¹​`Kabupaten/kota administrasi[14]`, ²​`Bupati/wali kota administrasi`, ³​`Luas wilayah(km²)[15]`, ⁴​`Jumlah penduduk (2015)[16]`
 ```
 
-The 11-th table has the same problem as the 8-th table, therefore, similar approach will fix the issue.
+The 11th table has the same problem as the 8th; a similar approach will fix the issue.
 ```R
 temp1 = table_all[[12]][1,11:19]
 temp2 = table_all[[12]][-1,1:10] # 12th table in table_all, the 1st table is the province table
@@ -363,12 +363,12 @@ table_city[[37]]
 8     8 Kabupaten Yahukimo           Sumohai (de jure)… Didimus Yahuli     17.152,00            350.880                51 1/510               NA      NA            [49]  NA   
 ```
 
-The 37-th table have two more columns: `Ref.` and a blank column. Dropping these columns should fix the issue.
+The 37th table has two more columns: `Ref.` and a blank column. Dropping these columns should fix the issue.
 ```R
-table_city[[37]] = table_all[[38]][,1:10] # the 11-th column is an empty column
+table_city[[37]] = table_all[[38]][,1:10] # the 11th column is an empty column
 ```
 
-After inspecting the tables with excess number of columns, the next process is to clean the column names.
+After inspecting the tables with excess columns, the next process is to clean the column names.
 ```R
 # function for cleaning column names
 clean_name_table = function(x){
@@ -481,10 +481,10 @@ table_city_tidy
 ```
 
 ## 4. Scraping the Branches' Names and Addresses
-After obtaining the names of cities and regencies in Indonesia, the next step is to scrape the branches from POS's official website. The data that will be scrape are the names and the addresses. These data can be used in later project, for example, in comparison to google maps data to access the availability of these branches. 
+After obtaining the names of cities and regencies in Indonesia, the next step is to scrape the branches from POS's official website. The data that will be scraped are the names and the addresses. These data can be used in later projects, for example, compared to google maps data to access the availability of these branches. 
 
 ### 4.1 Data Scraping
-Since the scraping process require additional action such as inputing city's or region's name, the scraping process will be performed using combination of`Rselenium` and `rvest` packages.
+Since the scraping process requires additional action, such as inputting the city's or regency's name, the scraping process will be performed using a combination of`Rselenium` and `rvest` packages.
 
 ```R
 library(Rselenium)
@@ -598,7 +598,7 @@ for (kabkota in kabkota_remaining){
 Wait until the scraping process ends.
 ![Scraping process on POS's website](../assets/gif/scraping pos website.gif)
 
-Since all the data come from the same website, the branch names and addresses are similar in format. Therefore, the cleaning process can be mostly done in the above syntax.After the scraping process is done, we will get `table_cabang`, containing all POS's branches data in Indonesia.
+Since all the data come from the same website, the branch names and addresses are similar in format. Therefore, the cleaning process can be mostly done in the above syntax. After scraping, we will get `table_cabang`, containing all POS's branch data in Indonesia.
 ```R
 print(table_cabang, n=20)
 ```
@@ -631,14 +631,11 @@ print(table_cabang, n=20)
 ```
 
 ### 4.2 Data Cleaning
-As seen in the first 20 rows of the scraped data, there are still some unclean data:
-1. in `kabkota` column, there are still some observation that still have `Kab.` included in the value. 
-1. There are some `-` values in `kode_pos`, but more importantly, there are also some `-` in `jalan`, which is crucial as the `jalan` column should have the most detail location of the branches. A quick search on google maps shows that there is no POS branch in these `kecamatan` (sub-district).
 
 <br>
 **All-caps values**
 
-Based on the above table, there seems to be some rows with all-caps values. To avoid duplication, all of the values should be changed to lower case.
+Based on the above table, some rows seem to have all-caps values. All of the values should be changed to lowercase to avoid duplication.
 ```R
 table_cabang = table_cabang %>% mutate(across(where(is.character), tolower))
 table_cabang
@@ -674,7 +671,7 @@ table_cabang
 <br>
 **Cities and Regencies without any Branches**
 
-It is important to remember that any search during scraping process that did not return any result, either because of server error or because of no branch in the region, would be marked as `NA`. There are 80 such cities and regencies.
+It is important to remember that any search during the scraping process that did not return any result, either because of a server error or because of no branch in the region, would be marked as `NA`. There are 80 such cities and regencies.
 ```R
 kabkota_with_no_branch = table_cabang %>% filter_all(any_vars(is.na(.)))
 kabkota_with_no_branch
@@ -765,12 +762,12 @@ kabkota_with_no_branch
 80 NA          NA    NA        jakarta utara                    NA 
 ```
 
-These rows will not be removed, but will be kept as reference, which can be used as comparison when scraping data via other sources, such as google maps.
+These rows will not be removed but kept as a reference, which can be used as a comparison when scraping data via other sources, such as google maps.
 
 <br>
 **Duplicated Branches**
 
-It is possible for a branch to show up multiple times during scraping process because of similar cities or regencies names. For example, branches in `Aceh Barat` may show up during scraping on `Aceh Barat Daya`. The following tabel shows that there are indeed duplicated rows.
+A branch can appear multiple times during scraping because of similar city or regency names. For example, branches in `Aceh Barat` may appear during scraping on `Aceh Barat Daya`. The following table shows that there are indeed duplicated rows.
 ```R
 table_cabang %>% count(nama_cabang, jalan, kecamatan, kabkota, sort = TRUE)
 ```
@@ -801,12 +798,12 @@ cat(nrow(table_cabang), nrow(table_no_dupl))
 22178 16698
 ```
 
-There was 22,178 rows before the removal. Now, there are only 16,698 rows.
+There were 22,178 rows before the removal. Now, there are only 16,698 rows.
 
 <br>
 **"Kab." in kabkota**
 
-Among the 16,798 rows, there are some rows that still have "kab." (stands for kabupaten/regency) in `kabkota`.
+Among the 16,798 rows, some rows still have "kab." (stands for kabupaten/regency) in `kabkota`.
 ```R
 table_no_dupl %>% filter(str_detect(kabkota, "kab."))
 ```
@@ -844,7 +841,7 @@ table_cabang_tidy %>% filter(str_detect(kabkota, "kab. "))
 <br>
 **Data with no address**
 
-There are also some rows with `-,` as values. The values can be found in columns `jalan`, `kecamatan`, and `kode_pos`. However, the most important rows are those with `-,` in `jalan`, since a branch will still be searchable even if `-,` `kecamatan` and `kode_pos` are missing as long as  the `kabkota` is not missing.
+There are also some rows with `-,` as values. The values can be found in columns `jalan`, `kecamatan`, and `kode_pos`. However, the most important rows are those with `-,` in `jalan`, since a branch will still be searchable even if `-,` `kecamatan` and `kode_pos` are missing as long as the `kabkota` is not missing.
 
 There are 98 rows with no value in `jalan`.
 ```R
@@ -868,7 +865,7 @@ table_cabang_tidy %>% filter(jalan == "-,")
 # ℹ Use `print(n = ...)` to see more rows
 ```
 
-These branches are not found in google maps, probably indicating that these branch do not exist, or are not operating anymore. Therefore, these rows will be removed.
+These branches are not found in google maps, probably indicating that these branches do not exist or are not operating anymore. Therefore, these rows will be removed.
 
 ```R
 table_cabang_tidy =
@@ -894,9 +891,9 @@ table_cabang_tidy
 # ℹ Use `print(n = ...)` to see more rows
 ```
 
-There are only 16,520 rows, 80 less rows even when added to the 98 rows with `-,`, because the function `filter()` also filter out the 80 rows with no branches.
+There are only 16,520 rows, 80 fewer rows even when added to the 98 rows with `-,`, because the function `filter()` also filters out the 80 rows with no branches.
 
 # 5. Conclusion
-Based on the scraped data, there are a total of 16,520 branches of POS Indonesia. This number is way more than the official number that is said to have 4000+ branches. This number, however, is way less than the supposed number if `Agen POS` is included, which is said to have 28,000 agents. If the scraped data does include only part of all POS agents, it will be a waste of potential. After all, the large number of agents will not be an advantage if the customers have no access to the agents.
+Based on the scraped data, there are 16,520 branches of POS Indonesia. This number is way more than the official number that is said to have 4000+ branches. This number, however, is way less than the supposed number if `Agen POS` is included, which is said to have 28,000 agents. If the scraped data does include only part of all POS agents, it will be a waste of potential. After all, the large number of agents will not be an advantage if the customers have no access to the agents.
 
-Furthermore, the scraping process failed to find branches in at least 80 cities/regencies. While the failure is caused by server error in some regions, there are also some regions that truly returned no result. However, it is important to note that it is possible that the website uses different keywords in some regions, since a metropolitan area like `Jakarta Utara` is one of the 80 cities/regencies without branch. A cross check with data from other sources, such as google maps, may provide complete the information.
+Furthermore, the scraping process failed to find branches in at least 80 cities/regencies. While the failure is caused by server error in some regions, some regions returned no result. However, it is important to note that the website may use different keywords in some regions since a metropolitan area like `Jakarta Utara` is one of the 80 cities/regencies without branches. Cross-checking data from other sources, such as google maps, may provide more complete information.
