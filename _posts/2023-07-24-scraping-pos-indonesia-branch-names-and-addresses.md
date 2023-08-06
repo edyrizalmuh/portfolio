@@ -1,9 +1,9 @@
 ---
-title: Scraping branch data of POS Indonesia
+title: Scraping POS Indonesia's Branch Names and Addresses
 tags: [Data Scraping, Data Cleaning, R, Rvest, Rselenium]
 style: border
 color: success
-description: Using Rselenium and Rvest to scrape branch data from POS Indonesia's official website.
+description: This post explains the scraping process on POS Indonesia's official website. The goal is to scrape branch names and addresses, which will be used in later projects. The scraping process was done using Rselenium and Rvest.
 ---
 
 {% include elements/figure.html image="assets/images/Pos_indo.png" %}
