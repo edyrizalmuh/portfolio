@@ -25,6 +25,10 @@ library(ggpubr)
 library(ggmosaic)
 library(naniar) # visualizing missing data
 library(vcd) # visualizing categorical data
+library(janitor)
+library(vip)
+library(themis)
+library(tictoc)
 
 df_train <- 
   read_csv("data/train.csv") %>% 
@@ -343,9 +347,132 @@ The results from Explanatory Data Analysis suggest a few approach that can be us
 1. There is no missing data, but `gpa` should be removed.
 1. The train data is imbalanced so a resampling technique such as SMOTE may improve model accuracy.
 1. Among the categorical variables, only `person_level` should be used because of its statistically significant with `best_performance`.
-1. 
+1. Some numerical variables have high correlation with other numerical variables.
 
-Recommendation:
-1. try different model
-1. try encoding variable such as gender
-1. 
+The modeling process is started by splitting the `df_train` into train dataset and validation dataset.
+```R
+set.seed(10969)
+split <- initial_split(df_train)
+train <- training(split)
+test <- testing(split) # validation dataset
+```
+
+The resampling process is done using cross validation with 10 folds.
+```R
+set.seed(10969)
+cv <- vfold_cv(train)
+```
+
+The preprocessing will kept to minimal by removing only the categorical variables mentioned before. This seems to be the preprocessing with the best result so far.
+```R
+rec_rf1 <- 
+  recipe(best_performance~., data = split) %>% 
+  step_rm("job_level", "employee_type", "marital_status_maried_y_n", "education_level")
+rec_rf1
+```
+```
+── Recipe ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+── Inputs 
+Number of variables by role
+outcome:    1
+predictor: 22
+
+── Operations 
+• Variables removed: "job_level", "employee_type", "marital_status_maried_y_n", "education_level"
+```
+
+Execute the preprocessing steps and extract the preprocessed data.
+```R
+prep_rec_rf1 <- prep(rec_rf1) # execute pre-processing steps
+juiced_rec_rf1 <- juice(prep_rec_rf1) # extract pre-processed dataframe
+```
+
+The next step is to build a model, in this case, a random forest with 100 trees. Tuning parameter is done to parameter `mtry`, the number of randomly sampled predictors, and parameter `min_n`, the minimun number of data points in a node before splitting.
+
+```R
+mod_rf <- 
+  rand_forest(
+    mtry = tune(),
+    trees = 100,
+    min_n = tune()
+  ) %>%
+  set_engine("ranger") %>%
+  set_mode("regression")
+```
+
+Combine the preprocessing steps and the model to make a workflow.
+```R
+wf_rf <-
+  workflow() %>%
+  add_recipe(rec_rf1) %>%
+  add_model(mod_rf)
+```
+
+Start the tuning parameters.
+```R
+tic()
+doParallel::registerDoParallel()
+set.seed(10969)
+res <- 
+  wf_rf %>%
+  tune_grid(
+    resamples = cv, 
+    grid = 50,
+    control = control_resamples(verbose = TRUE)
+  )
+toc()
+res
+```
+```
+# Tuning results
+# 10-fold cross-validation 
+# A tibble: 10 × 4
+   splits             id     .metrics           .notes          
+   <list>             <chr>  <list>             <list>          
+ 1 <split [7527/837]> Fold01 <tibble [100 × 6]> <tibble [0 × 3]>
+ 2 <split [7527/837]> Fold02 <tibble [100 × 6]> <tibble [0 × 3]>
+ 3 <split [7527/837]> Fold03 <tibble [100 × 6]> <tibble [0 × 3]>
+ 4 <split [7527/837]> Fold04 <tibble [100 × 6]> <tibble [0 × 3]>
+ 5 <split [7528/836]> Fold05 <tibble [100 × 6]> <tibble [0 × 3]>
+ 6 <split [7528/836]> Fold06 <tibble [100 × 6]> <tibble [0 × 3]>
+ 7 <split [7528/836]> Fold07 <tibble [100 × 6]> <tibble [0 × 3]>
+ 8 <split [7528/836]> Fold08 <tibble [100 × 6]> <tibble [0 × 3]>
+ 9 <split [7528/836]> Fold09 <tibble [100 × 6]> <tibble [0 × 3]>
+10 <split [7528/836]> Fold10 <tibble [100 × 6]> <tibble [0 × 3]>
+```
+
+Of the 50 sets of parameters, these are the ones with the best accuracies.
+```R
+show_best(res)
+```
+```
+# A tibble: 5 × 8
+   mtry min_n .metric .estimator  mean     n std_err .config              
+  <int> <int> <chr>   <chr>      <dbl> <int>   <dbl> <chr>                
+1     2    36 rmse    standard   0.349    10 0.00353 Preprocessor1_Model35
+2     1    11 rmse    standard   0.349    10 0.00369 Preprocessor1_Model48
+3     1     3 rmse    standard   0.349    10 0.00358 Preprocessor1_Model32
+4     4    32 rmse    standard   0.349    10 0.00364 Preprocessor1_Model36
+5     2    18 rmse    standard   0.349    10 0.00362 Preprocessor1_Model39
+Warning message:
+No value of `metric` was given; metric 'rmse' will be used. 
+```
+
+Based on the table, the best parameters of the searched grid are model with 2 randomly sampled predictors, 36 minimal data points for splitting, and 100 trees. However, the accuracy is still low and definitely can be improved. 
+
+Variable importance can be plotted using vip package.
+```R
+final_model <- finalize_model(mod_rf, best)
+final_model %>%
+  set_engine("ranger", importance = "permutation") %>%
+  fit(best_performance~., data = juiced_rec_rf2) %>%
+  vip(geom = "point")
+```
+
+{% include elements/figure.html image="assets/images/BRI - variable importance.png" caption="Variable Importance"%}
+
+Based on the vip plot, job duration in the current branch, number of dependencies, and gender are the most important variables in determining whether an employee can become a best performance employee.
+
+## Conclusion
+The model build in this project is far from perfect. The RMSE is still high with 0.35 RMSE in the best model. However, there are some approach that I am trying to try in the future. A more extensive parameter tuning may help in finding a better parameter set for the RF model. But more importantly, a deeper exploration on the data itself may uncover more insight that can lead to better model. Scaling `gpa` to fit the education of the employee or encoding nominal variable such as `gender` are some preprocessing and feature engineering steps that I would like to try in the future.
