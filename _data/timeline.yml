@@ -2,5 +2,39 @@
   from: 2020
   to: 2023
   description: I studied statistics and data science. Every course in the program is divided  
-               into theoretical and practical classes using real-case data as consideration.
+               into theoretical and practical classes using real-world case as data.
 
+- title: Data analytics - Fast Track
+  from: September 12, 2022
+  to: October 19, 2022
+  description: This course was held by Ministry of Communication and Information Technologi (Kominfo) 
+              through Digital Talent Scholarship (Digitalent) program in collaboration with DQLab. 
+              I mainly learned about SQL, Python, and ETL. I learned about SQL query, regex, pentaho 
+              as an ETL tool, EDA with python, machine learning, and data visualization/dashboard. 
+              I also had a study case where I had to turn raw data into a journalism piece.
+  
+- title: Data engineer
+  from: March 09, 2022
+  to: April 15, 2022
+  description: This course was held by Ministry of Communication and Information Technologi (Kominfo) 
+              through Digital Talent Scholarship (Digitalent) program in collaboration with DQLab. 
+              I learned about SQL fundamentals, data quality, data wrangling, and data cleaning.
+
+- title: Exploratory data analysis
+  from: July 18, 2020
+  to: July 18, 2020
+  description: This workshop was held by Technaut Education. I learned about techniques and tools for exploratory data analysis.
+
+- title: Big data analytics
+  from: July 1, 2019
+  to: August 16, 2019
+  description: This course was held by Ministry of Communication and Information Technologi (Kominfo) 
+              through Digital Talent Scholarship (Digitalent) program in collaboration with IBM's 
+              Coginitive Class. I learned about big data, AWS cloud service, python, hadoop, SQL/NoSQL, 
+              data visualization, data cleaning, and modeling. I had three projects, that is, data collection, 
+              data modeling, and data visualization, which combined into one final dashboard project.
+  
+- title: Student, Makassar State University
+  from: 2013
+  to: 2017
+  description: I studied Mathematics with a few course in statistics.

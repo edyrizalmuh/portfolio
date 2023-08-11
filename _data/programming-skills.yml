@@ -6,14 +6,18 @@
   percentage: 80
   color: warning
 
+- name: SQL
+  percentage: 80
+  color: warning
+  
 - name: Python
   percentage: 50
   color: secondary
   
-- name: Power BI
-  percentage: 30
-  color: secondary
-
-- name: SQL
-  percentage: 90
-  color: danger
+# - name: Power BI
+#   percentage: 30
+#   color: secondary
+  
+# - name: Tableau
+#   percentage: 30
+#   color: secondary
