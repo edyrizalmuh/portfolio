@@ -1,8 +1,10 @@
 .markdown-body {
+
   h1,
   h2 {
     margin-top: 32px;
   }
+
   // counter-reset: section;
 
   // h2 {
@@ -10,7 +12,7 @@
   //   margin-top: 32px;
   //   counter-reset: subsection; /* Reset the subsection counter for each h2 */
   //   padding-left: 2rem; /* Add padding to create space between numbering and heading */
-  
+
   //   /* Add numbering using the 'content' property and the 'counter()' function */
   //   &::before {
   //     counter-increment: section;
@@ -19,7 +21,7 @@
   //     left: 0;
   //   }
   // }
-  
+
   // h2 span {
   //   /* Move the heading text to the right */
   //   position: relative;
@@ -31,7 +33,7 @@
   //   margin-top: 24px;
   //   counter-increment: subsection;
   //   padding-left: 3rem; /* Add more padding for h3 to create space between numbering and heading */
-  
+
   //   /* Add numbering using the 'content' property and the 'counter()' function */
   //   &::before {
   //     content: counters(section, ".") "." counters(subsection, ".") " ";
@@ -45,7 +47,7 @@
   //   position: relative;
   //   left: 3.5rem;
   // }
-  
+
   hr {
     background: $secondary;
   }
@@ -62,6 +64,7 @@
     padding-bottom: 56.25%;
     margin-bottom: 1rem;
     width: 100%;
+
     iframe {
       position: absolute;
       height: 100%;
@@ -140,16 +143,18 @@
     td {
       border: 1px solid #ddd;
       padding: 8px 16px;
+      font-size: 14px;
     }
 
     th {
       @extend td;
       padding-top: 12px;
       padding-bottom: 12px;
-      font-weight: 500;
+      font-weight: bold;
       text-align: left;
       background-color: $primary;
       color: white;
+      font-size: 14px;
     }
 
     tr:nth-child(even) {
