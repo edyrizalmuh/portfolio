@@ -107,6 +107,9 @@ exclude:
   - LICENSE
   - "*.log"
 
+# Build settings
+markdown: kramdown
+
 # kramdown:
 #   input: GFM
 #   toc_levels: "1,2,3,4,5,6"
