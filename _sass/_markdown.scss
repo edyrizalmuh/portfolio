@@ -138,6 +138,8 @@
   table:not(.highlight) {
     display: block;
     overflow-x: auto;
+    max-height: 300px;
+    overflow-y: auto;
     margin: 1rem 0;
 
     td {
