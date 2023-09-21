@@ -20,10 +20,9 @@ As a state-owned bank, Bank Rakyat Indonesia (BRI) faces similar challenges. In 
 
 To be more specific, the task is to predict the `kas_kantor` and `kas_echannel` columns for the next 31 days using several variables. Both variables are defined as follows:
 
-$$
-kas\_kantor_{t} = kas\_kantor_{t-1} + cash\_in\_kantor_{t} + cash\_out\_kantor_{t} \\
-kas\_echannel_{t} = kas\_echannel_{t-1} + cash\_in\_echannel_{t} + cash\_out\_echannel_{t}
-$$
+$$kas\_kantor_{t} = kas\_kantor_{t-1} + cash\_in\_kantor_{t} + cash\_out\_kantor_{t}$$
+
+$$kas\_echannel_{t} = kas\_echannel_{t-1} + cash\_in\_echannel_{t} + cash\_out\_echannel_{t}$$
 
 where $$t$$ is time. Since `kas_kantor` and `kas_echannel` can be calculated using these formula, essentially, the task is to forecast the four `cash_in` and `cash_out` variables.
 
